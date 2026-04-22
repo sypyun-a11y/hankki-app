@@ -378,11 +378,14 @@ function MainApp({ userInfo, weeklyMenus, onReset }) {
 export default function App() {
   const [appState, setAppState] = useState(null);
 
-  if (!appState) {
-    return <Onboarding onComplete={(data) => setAppState(data)} />;
-  }
-
-  return <MainApp userInfo={appState.userInfo} weeklyMenus={appState.weeklyMenus} onReset={() => setAppState(null)} />;
+  return (
+    <div style={{ minHeight: "100vh", background: `linear-gradient(160deg, #2E6DA4, #4BA89A)`, display: "flex", justifyContent: "center" }}>
+      {!appState
+        ? <Onboarding onComplete={(data) => setAppState(data)} />
+        : <MainApp userInfo={appState.userInfo} weeklyMenus={appState.weeklyMenus} onReset={() => setAppState(null)} />
+      }
+    </div>
+  );
 }
 
 const labelSt = { display: "block", fontSize: 14, color: COLORS.sub, fontWeight: 600, marginBottom: 8 };
