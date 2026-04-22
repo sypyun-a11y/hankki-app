@@ -306,9 +306,17 @@ function MainApp({ userInfo, weeklyMenus, onReset }) {
               <p style={{ margin: "0 0 4px", fontSize: 13, color: COLORS.sub, fontWeight: 600 }}>공유할 내용 미리보기</p>
               <p style={{ margin: 0, fontSize: 15, color: COLORS.text }}>📋 이번 주 식단표 + 🛒 장바구니 링크</p>
             </div>
-            <button onClick={() => setShared(v => !v)} style={{ width: "100%", padding: "16px 0", borderRadius: 14, border: "none", background: shared ? "#E8F5F2" : "#FEE500", color: shared ? COLORS.teal : "#3A1D1D", fontSize: 16, fontWeight: 700, fontFamily: FONT, cursor: "pointer", transition: "all 0.3s" }}>
-              {shared ? "✅ 자녀에게 카톡 공유 완료!" : "💬 자녀에게 카톡으로 공유하기"}
-            </button>
+<button onClick={() => {
+  const text = `🍚 한 끼 챙김 - 이번 주 식단\n\n${weeklyMenus[selectedDay]?.meals?.map((m, i) => `${mealLabels[i]}: ${m.name}`).join('\n')}\n\n🛒 장바구니 보기: https://nimonohankki-app.vercel.app`;
+  if (navigator.share) {
+    navigator.share({ title: '한 끼 챙김 식단', text });
+  } else {
+    navigator.clipboard.writeText(text);
+    alert('클립보드에 복사됐어요!');
+  }
+}} style={{ width: "100%", padding: "16px 0", borderRadius: 14, border: "none", background: "#FEE500", color: "#3A1D1D", fontSize: 16, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>
+  💬 자녀에게 카톡으로 공유하기
+</button>
           </div>
         </div>
       )}
