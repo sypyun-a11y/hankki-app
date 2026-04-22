@@ -38,38 +38,16 @@ async function generateDiet({ age, gender, height, weight, activity, bmr }) {
   const genderLabel = gender === "male" ? "남성" : "여성";
   const activityLabel = activityLevels.find(a => a.value === activity)?.label || "";
 
-  const prompt = `당신은 한국 노년층 영양 전문가입니다. 아래 정보를 바탕으로 이번 주 7일치 한식 맞춤 식단을 만들어주세요.
+  const prompt = `한국 노년층 영양 전문가로서 7일치 한식 맞춤 식단을 JSON으로만 응답하세요.
 
-사용자 정보:
-- 성별: ${genderLabel}
-- 나이: ${age}세
-- 키: ${height}cm
-- 체중: ${weight}kg
-- 활동량: ${activityLabel}
-- 하루 권장 칼로리: ${bmr}kcal
+정보: ${genderLabel} ${age}세 키${height}cm 체중${weight}kg 활동량:${activityLabel} 권장칼로리:${bmr}kcal
 
-조건:
-- 한식 위주로 구성 (현미밥, 잡곡밥, 된장국, 나물, 생선 등)
-- 노년층에 적합하게 소화가 잘 되는 음식
-- 아침/점심/저녁 3끼 구성
-- 각 끼니마다 칼로리 포함
-- 각 끼니마다 주요 식재료 2~4개 포함
+조건: 한식위주, 소화잘되는음식, 아침/점심/저녁 3끼, 칼로리포함, 식재료2~4개
 
-반드시 아래 JSON 형식으로만 응답하세요. 다른 말은 하지 마세요:
-{
-  "days": [
-    {
-      "meals": [
-        { "name": "메뉴 이름", "kcal": 숫자, "ingredients": ["재료1", "재료2"] },
-        { "name": "메뉴 이름", "kcal": 숫자, "ingredients": ["재료1", "재료2"] },
-        { "name": "메뉴 이름", "kcal": 숫자, "ingredients": ["재료1", "재료2"] }
-      ]
-    }
-  ]
-}
-days 배열은 정확히 7개여야 합니다.`;
+반드시 아래 JSON만 응답 (다른말 금지):
+{"days":[{"meals":[{"name":"메뉴","kcal":숫자,"ingredients":["재료1","재료2"]},{"name":"메뉴","kcal":숫자,"ingredients":["재료1","재료2"]},{"name":"메뉴","kcal":숫자,"ingredients":["재료1","재료2"]}]},{"meals":[{"name":"메뉴","kcal":숫자,"ingredients":["재료1","재료2"]},{"name":"메뉴","kcal":숫자,"ingredients":["재료1","재료2"]},{"name":"메뉴","kcal":숫자,"ingredients":["재료1","재료2"]}]},{"meals":[{"name":"메뉴","kcal":숫자,"ingredients":["재료1","재료2"]},{"name":"메뉴","kcal":숫자,"ingredients":["재료1","재료2"]},{"name":"메뉴","kcal":숫자,"ingredients":["재료1","재료2"]}]},{"meals":[{"name":"메뉴","kcal":숫자,"ingredients":["재료1","재료2"]},{"name":"메뉴","kcal":숫자,"ingredients":["재료1","재료2"]},{"name":"메뉴","kcal":숫자,"ingredients":["재료1","재료2"]}]},{"meals":[{"name":"메뉴","kcal":숫자,"ingredients":["재료1","재료2"]},{"name":"메뉴","kcal":숫자,"ingredients":["재료1","재료2"]},{"name":"메뉴","kcal":숫자,"ingredients":["재료1","재료2"]}]},{"meals":[{"name":"메뉴","kcal":숫자,"ingredients":["재료1","재료2"]},{"name":"메뉴","kcal":숫자,"ingredients":["재료1","재료2"]},{"name":"메뉴","kcal":숫자,"ingredients":["재료1","재료2"]}]},{"meals":[{"name":"메뉴","kcal":숫자,"ingredients":["재료1","재료2"]},{"name":"메뉴","kcal":숫자,"ingredients":["재료1","재료2"]},{"name":"메뉴","kcal":숫자,"ingredients":["재료1","재료2"]}]}]}`;
 
- const response = await fetch("/api/diet", {
+  const response = await fetch("/api/diet", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ prompt }),
@@ -89,6 +67,7 @@ function Onboarding({ onComplete }) {
   const valid = form.age && form.height && form.weight;
 
   const handleSubmit = async () => {
+    if (loading) return;
     setLoading(true);
     setError(null);
     try {
@@ -110,32 +89,32 @@ function Onboarding({ onComplete }) {
         <p style={{ margin: "6px 0 0", fontSize: 15, opacity: 0.75 }}>입력하신 정보로 AI가 식단을 설계해드려요</p>
       </div>
 
-      <div style={{ padding: "0 16px", marginTop: -16 }}>
+      <div style={{ padding: "0 16px", marginTop: -16, pointerEvents: loading ? "none" : "auto", opacity: loading ? 0.6 : 1, transition: "opacity 0.3s" }}>
         <div style={{ background: COLORS.card, borderRadius: 20, padding: "24px 20px", boxShadow: "0 4px 20px rgba(46,109,164,0.10)" }}>
           <label style={labelSt}>성별</label>
           <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
             {[{ v: "female", l: "여성 👩" }, { v: "male", l: "남성 👨" }].map(({ v, l }) => (
-              <button key={v} onClick={() => setForm({ ...form, gender: v })}
-                style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: `2px solid ${form.gender === v ? COLORS.primary : COLORS.border}`, background: form.gender === v ? COLORS.lightBlue : "#fff", color: form.gender === v ? COLORS.primary : COLORS.sub, fontWeight: 700, cursor: "pointer", fontSize: 15, fontFamily: FONT, transition: "all 0.2s" }}>
+              <button key={v} onClick={() => !loading && setForm({ ...form, gender: v })}
+                style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: `2px solid ${form.gender === v ? COLORS.primary : COLORS.border}`, background: form.gender === v ? COLORS.lightBlue : "#fff", color: form.gender === v ? COLORS.primary : COLORS.sub, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", fontSize: 15, fontFamily: FONT, transition: "all 0.2s" }}>
                 {l}
               </button>
             ))}
           </div>
 
           <label style={labelSt}>나이</label>
-          <input style={inputSt} type="number" placeholder="예) 68" value={form.age} onChange={e => setForm({ ...form, age: e.target.value })} />
+          <input style={inputSt} type="number" placeholder="예) 68" value={form.age} disabled={loading} onChange={e => setForm({ ...form, age: e.target.value })} />
 
           <label style={labelSt}>키 (cm)</label>
-          <input style={inputSt} type="number" placeholder="예) 162" value={form.height} onChange={e => setForm({ ...form, height: e.target.value })} />
+          <input style={inputSt} type="number" placeholder="예) 162" value={form.height} disabled={loading} onChange={e => setForm({ ...form, height: e.target.value })} />
 
           <label style={labelSt}>체중 (kg)</label>
-          <input style={inputSt} type="number" placeholder="예) 58" value={form.weight} onChange={e => setForm({ ...form, weight: e.target.value })} />
+          <input style={inputSt} type="number" placeholder="예) 58" value={form.weight} disabled={loading} onChange={e => setForm({ ...form, weight: e.target.value })} />
 
           <label style={labelSt}>활동량</label>
           <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24 }}>
             {activityLevels.map(({ label, value }) => (
-              <button key={value} onClick={() => setForm({ ...form, activity: value })}
-                style={{ padding: "12px 14px", borderRadius: 12, border: `2px solid ${form.activity === value ? COLORS.primary : COLORS.border}`, background: form.activity === value ? COLORS.lightBlue : "#fff", color: form.activity === value ? COLORS.primary : COLORS.sub, fontWeight: form.activity === value ? 700 : 400, cursor: "pointer", fontSize: 15, textAlign: "left", fontFamily: FONT, transition: "all 0.2s" }}>
+              <button key={value} onClick={() => !loading && setForm({ ...form, activity: value })}
+                style={{ padding: "12px 14px", borderRadius: 12, border: `2px solid ${form.activity === value ? COLORS.primary : COLORS.border}`, background: form.activity === value ? COLORS.lightBlue : "#fff", color: form.activity === value ? COLORS.primary : COLORS.sub, fontWeight: form.activity === value ? 700 : 400, cursor: loading ? "not-allowed" : "pointer", fontSize: 15, textAlign: "left", fontFamily: FONT, transition: "all 0.2s" }}>
                 {label}
               </button>
             ))}
@@ -215,7 +194,7 @@ function MainApp({ userInfo, weeklyMenus, onReset }) {
               <div onClick={() => setTab("diet")} style={{ background: COLORS.card, borderRadius: 16, padding: "16px 14px", boxShadow: "0 2px 12px rgba(46,109,164,0.10)", cursor: "pointer" }}>
                 <p style={{ margin: "0 0 8px", fontSize: 13, color: COLORS.sub, fontWeight: 600 }}>오늘의 식단</p>
                 {todayMenu?.meals?.map((m, i) => (
-                  <p key={i} style={{ margin: "0 0 6px", fontSize: 13, color: COLORS.text, lineHeight: 1.4 }}>{mealLabels[i]}<br /><span style={{ color: COLORS.sub, fontSize: 12 }}>{m.name.split(" + ")[0]}</span></p>
+                  <p key={i} style={{ margin: "0 0 6px", fontSize: 13, color: COLORS.text, lineHeight: 1.4 }}>{mealLabels[i]}<br /><span style={{ color: COLORS.sub, fontSize: 12 }}>{m.name.split(",")[0]}</span></p>
                 ))}
                 <p style={{ margin: "8px 0 0", fontSize: 13, color: COLORS.primary, fontWeight: 600 }}>자세히 보기 →</p>
               </div>
@@ -311,8 +290,10 @@ function MainApp({ userInfo, weeklyMenus, onReset }) {
             <div key={ing} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 0", borderBottom: `1px solid ${COLORS.border}` }}>
               <span style={{ fontSize: 16, color: COLORS.text }}>🛒 {ing}</span>
               <div style={{ display: "flex", gap: 8 }}>
-                <button style={{ fontSize: 13, padding: "6px 14px", borderRadius: 8, border: `1.5px solid ${COLORS.accent}`, background: "#FFF8EE", color: "#C97A10", fontWeight: 600, fontFamily: FONT, cursor: "pointer" }}>쿠팡</button>
-                <button style={{ fontSize: 13, padding: "6px 14px", borderRadius: 8, border: `1.5px solid ${COLORS.teal}`, background: "#E8F5F2", color: "#2A9D8F", fontWeight: 600, fontFamily: FONT, cursor: "pointer" }}>컬리</button>
+                <a href={`https://www.coupang.com/np/search?q=${encodeURIComponent(ing)}`} target="_blank" rel="noopener noreferrer"
+                  style={{ fontSize: 13, padding: "6px 14px", borderRadius: 8, border: `1.5px solid ${COLORS.accent}`, background: "#FFF8EE", color: "#C97A10", fontWeight: 600, fontFamily: FONT, cursor: "pointer", textDecoration: "none" }}>쿠팡</a>
+                <a href={`https://www.kurly.com/search?sword=${encodeURIComponent(ing)}`} target="_blank" rel="noopener noreferrer"
+                  style={{ fontSize: 13, padding: "6px 14px", borderRadius: 8, border: `1.5px solid ${COLORS.teal}`, background: "#E8F5F2", color: "#2A9D8F", fontWeight: 600, fontFamily: FONT, cursor: "pointer", textDecoration: "none" }}>컬리</a>
               </div>
             </div>
           ))}
