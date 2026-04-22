@@ -38,14 +38,18 @@ async function generateDiet({ age, gender, height, weight, activity, bmr }) {
   const genderLabel = gender === "male" ? "남성" : "여성";
   const activityLabel = activityLevels.find(a => a.value === activity)?.label || "";
 
-  const prompt = `한국 노년층 영양 전문가로서 7일치 한식 맞춤 식단을 JSON으로만 응답하세요.
+const prompt = `당신은 한국 노년층 영양 전문가입니다. 7일치 한식 식단을 만들어주세요.
 
-정보: ${genderLabel} ${age}세 키${height}cm 체중${weight}kg 활동량:${activityLabel} 권장칼로리:${bmr}kcal
+사용자: ${genderLabel} ${age}세 키${height}cm 체중${weight}kg 활동량:${activityLabel} 권장칼로리:${bmr}kcal
 
-조건: 한식위주, 소화잘되는음식, 아침/점심/저녁 3끼, 칼로리포함, 식재료2~4개
+중요: 
+- 각 끼니는 밥(현미밥/잡곡밥 등) + 국 + 반찬으로 구성
+- 아침 400~500kcal, 점심 600~700kcal, 저녁 500~600kcal
+- 반드시 실제 칼로리로 계산해서 입력
 
-반드시 아래 JSON만 응답 (다른말 금지):
-{"days":[{"meals":[{"name":"메뉴","kcal":숫자,"ingredients":["재료1","재료2"]},{"name":"메뉴","kcal":숫자,"ingredients":["재료1","재료2"]},{"name":"메뉴","kcal":숫자,"ingredients":["재료1","재료2"]}]},{"meals":[{"name":"메뉴","kcal":숫자,"ingredients":["재료1","재료2"]},{"name":"메뉴","kcal":숫자,"ingredients":["재료1","재료2"]},{"name":"메뉴","kcal":숫자,"ingredients":["재료1","재료2"]}]},{"meals":[{"name":"메뉴","kcal":숫자,"ingredients":["재료1","재료2"]},{"name":"메뉴","kcal":숫자,"ingredients":["재료1","재료2"]},{"name":"메뉴","kcal":숫자,"ingredients":["재료1","재료2"]}]},{"meals":[{"name":"메뉴","kcal":숫자,"ingredients":["재료1","재료2"]},{"name":"메뉴","kcal":숫자,"ingredients":["재료1","재료2"]},{"name":"메뉴","kcal":숫자,"ingredients":["재료1","재료2"]}]},{"meals":[{"name":"메뉴","kcal":숫자,"ingredients":["재료1","재료2"]},{"name":"메뉴","kcal":숫자,"ingredients":["재료1","재료2"]},{"name":"메뉴","kcal":숫자,"ingredients":["재료1","재료2"]}]},{"meals":[{"name":"메뉴","kcal":숫자,"ingredients":["재료1","재료2"]},{"name":"메뉴","kcal":숫자,"ingredients":["재료1","재료2"]},{"name":"메뉴","kcal":숫자,"ingredients":["재료1","재료2"]}]},{"meals":[{"name":"메뉴","kcal":숫자,"ingredients":["재료1","재료2"]},{"name":"메뉴","kcal":숫자,"ingredients":["재료1","재료2"]},{"name":"메뉴","kcal":숫자,"ingredients":["재료1","재료2"]}]}]}`;
+JSON만 응답:
+{"days":[{"meals":[{"name":"현미밥 + 된장국 + 두부조림","kcal":450,"ingredients":["현미","된장","두부"]},{"name":"잡곡밥 + 미역국 + 고등어구이","kcal":620,"ingredients":["잡곡","미역","고등어"]},{"name":"현미밥 + 북어국 + 시금치나물","kcal":520,"ingredients":["현미","북어","시금치"]}]}]}
+days는 정확히 7개`;
 
   const response = await fetch("/api/diet", {
     method: "POST",
