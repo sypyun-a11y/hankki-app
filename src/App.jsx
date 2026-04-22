@@ -69,14 +69,10 @@ async function generateDiet({ age, gender, height, weight, activity, bmr }) {
 }
 days 배열은 정확히 7개여야 합니다.`;
 
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
+ const response = await fetch("/api/diet", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1000,
-      messages: [{ role: "user", content: prompt }],
-    }),
+    body: JSON.stringify({ prompt }),
   });
 
   const data = await response.json();
