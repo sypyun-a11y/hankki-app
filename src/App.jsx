@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const COLORS = {
   bg: "#F7F4EF",
@@ -144,6 +144,23 @@ function Onboarding({ onComplete }) {
 
 function MainApp({ userInfo, weeklyMenus, onReset }) {
   const [tab, setTab] = useState("home");
+  const [newsItems, setNewsItems] = useState([
+  { emoji: "🫀", title: "노년기 심장 건강엔 등푸른 생선", tag: "심장건강" },
+  { emoji: "🦴", title: "칼슘 흡수 돕는 비타민D 식품 TOP5", tag: "뼈건강" },
+  { emoji: "🧠", title: "치매 예방에 좋은 식습관 7가지", tag: "뇌건강" },
+]);
+
+useEffect(() => {
+  fetch("/api/news", { method: "POST" })
+    .then(r => r.json())
+    .then(data => {
+      const text = data.content?.[0]?.text || "";
+      const clean = text.replace(/```json|```/g, "").trim();
+      const parsed = JSON.parse(clean);
+      if (parsed.tips) setNewsItems(parsed.tips);
+    })
+    .catch(() => {});
+}, []);
   const [selectedDay, setSelectedDay] = useState(0);
   const [todayLog, setTodayLog] = useState({ 아침: false, 점심: false, 저녁: false });
   const [stamps] = useState(stampData);
