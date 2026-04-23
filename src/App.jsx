@@ -15,11 +15,6 @@ const COLORS = {
 const FONT = "-apple-system, 'Helvetica Neue', Arial, sans-serif";
 const days = ["월", "화", "수", "목", "금", "토", "일"];
 const mealLabels = ["아침 🌅", "점심 ☀️", "저녁 🌙"];
-const newsItems = [
-  { emoji: "🫀", title: "노년기 심장 건강엔 등푸른 생선", tag: "심장건강" },
-  { emoji: "🦴", title: "칼슘 흡수 돕는 비타민D 식품 TOP5", tag: "뼈건강" },
-  { emoji: "🧠", title: "치매 예방에 좋은 식습관 7가지", tag: "뇌건강" },
-];
 const stampData = [true, true, true, false, false, false, false];
 const activityLevels = [
   { label: "거의 안 움직여요", value: 1.2 },
@@ -38,7 +33,7 @@ async function generateDiet({ age, gender, height, weight, activity, bmr }) {
   const genderLabel = gender === "male" ? "남성" : "여성";
   const activityLabel = activityLevels.find(a => a.value === activity)?.label || "";
 
-const prompt = `당신은 한국 노년층 영양 전문가입니다. 7일치 한식 식단을 만들어주세요.
+  const prompt = `당신은 한국 노년층 영양 전문가입니다. 7일치 한식 식단을 만들어주세요.
 
 사용자: ${genderLabel} ${age}세 키${height}cm 체중${weight}kg 활동량:${activityLabel} 권장칼로리:${bmr}kcal
 
@@ -61,6 +56,58 @@ days는 정확히 7개`;
   const text = data.content?.[0]?.text || "";
   const clean = text.replace(/```json|```/g, "").trim();
   return JSON.parse(clean);
+}
+
+// 카드뉴스 상세 화면
+function CardNews({ item, onBack }) {
+  const [detail, setDetail] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/news", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ topic: item.title }),
+    })
+      .then(r => r.json())
+      .then(data => {
+        const text = data.content?.[0]?.text || "";
+        const clean = text.replace(/```json|```/g, "").trim();
+        setDetail(JSON.parse(clean));
+      })
+      .catch(() => setDetail(null))
+      .finally(() => setLoading(false));
+  }, []);
+
+  return (
+    <div style={{ fontFamily: FONT, background: COLORS.bg, minHeight: "100vh", maxWidth: 390, margin: "0 auto" }}>
+      {/* 헤더 */}
+      <div style={{ background: detail?.color || `linear-gradient(135deg, ${COLORS.primary}, ${COLORS.teal})`, padding: "52px 20px 32px", color: "#fff", position: "relative" }}>
+        <button onClick={onBack} style={{ background: "rgba(255,255,255,0.2)", border: "none", color: "#fff", borderRadius: 20, padding: "6px 14px", fontSize: 14, cursor: "pointer", fontFamily: FONT, marginBottom: 16 }}>← 뒤로</button>
+        <div style={{ fontSize: 64, marginBottom: 12 }}>{loading ? "⏳" : detail?.emoji || item.emoji}</div>
+        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, letterSpacing: "-0.5px", lineHeight: 1.3 }}>{loading ? "불러오는 중..." : detail?.title || item.title}</h1>
+        {detail?.summary && <p style={{ margin: "8px 0 0", fontSize: 14, opacity: 0.85 }}>{detail.summary}</p>}
+      </div>
+
+      <div style={{ padding: "20px 16px" }}>
+        {loading ? (
+          <div style={{ textAlign: "center", padding: "40px 0" }}>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>🔄</div>
+            <p style={{ color: COLORS.sub, fontSize: 15 }}>AI가 건강 정보를 준비하고 있어요...</p>
+          </div>
+        ) : detail?.points ? (
+          detail.points.map((point, i) => (
+            <div key={i} style={{ background: COLORS.card, borderRadius: 16, padding: "18px", marginBottom: 12, boxShadow: "0 2px 12px rgba(46,109,164,0.08)", display: "flex", alignItems: "flex-start", gap: 14 }}>
+              <div style={{ width: 32, height: 32, borderRadius: "50%", background: detail?.color || COLORS.primary, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, flexShrink: 0 }}>{i + 1}</div>
+              <p style={{ margin: 0, fontSize: 16, color: COLORS.text, lineHeight: 1.6, fontWeight: 500 }}>{point}</p>
+            </div>
+          ))
+        ) : (
+          <p style={{ color: COLORS.sub, textAlign: "center" }}>정보를 불러오지 못했어요</p>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function Onboarding({ onComplete }) {
@@ -144,28 +191,29 @@ function Onboarding({ onComplete }) {
 
 function MainApp({ userInfo, weeklyMenus, onReset }) {
   const [tab, setTab] = useState("home");
-  const [newsItems, setNewsItems] = useState([
-  { emoji: "🫀", title: "노년기 심장 건강엔 등푸른 생선", tag: "심장건강" },
-  { emoji: "🦴", title: "칼슘 흡수 돕는 비타민D 식품 TOP5", tag: "뼈건강" },
-  { emoji: "🧠", title: "치매 예방에 좋은 식습관 7가지", tag: "뇌건강" },
-]);
-
-useEffect(() => {
-  fetch("/api/news", { method: "POST" })
-    .then(r => r.json())
-    .then(data => {
-      const text = data.content?.[0]?.text || "";
-      const clean = text.replace(/```json|```/g, "").trim();
-      const parsed = JSON.parse(clean);
-      if (parsed.tips) setNewsItems(parsed.tips);
-    })
-    .catch(() => {});
-}, []);
   const [selectedDay, setSelectedDay] = useState(0);
   const [todayLog, setTodayLog] = useState({ 아침: false, 점심: false, 저녁: false });
   const [stamps] = useState(stampData);
   const [weight] = useState([62, 61.8, 61.5, 61.7, 61.3, 61.0, 60.8]);
   const [shared, setShared] = useState(false);
+  const [selectedNews, setSelectedNews] = useState(null);
+  const [newsItems, setNewsItems] = useState([
+    { emoji: "🫀", title: "노년기 심장 건강엔 등푸른 생선", tag: "심장건강", color: "#E8F3FF" },
+    { emoji: "🦴", title: "칼슘 흡수 돕는 비타민D 식품", tag: "뼈건강", color: "#F0FFF4" },
+    { emoji: "🧠", title: "치매 예방에 좋은 식습관", tag: "뇌건강", color: "#FFF8E8" },
+  ]);
+
+  useEffect(() => {
+    fetch("/api/news", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) })
+      .then(r => r.json())
+      .then(data => {
+        const text = data.content?.[0]?.text || "";
+        const clean = text.replace(/```json|```/g, "").trim();
+        const parsed = JSON.parse(clean);
+        if (parsed.tips) setNewsItems(parsed.tips);
+      })
+      .catch(() => {});
+  }, []);
 
   const allChecked = Object.values(todayLog).every(Boolean);
   const checkedCount = Object.values(todayLog).filter(Boolean).length;
@@ -179,18 +227,24 @@ useEffect(() => {
     { id: "health", label: "건강", icon: "📊" },
   ];
 
+  // 카드뉴스 상세 화면
+  if (selectedNews) {
+    return <CardNews item={selectedNews} onBack={() => setSelectedNews(null)} />;
+  }
+
   return (
     <div style={{ fontFamily: FONT, background: COLORS.bg, minHeight: "100vh", maxWidth: 390, margin: "0 auto", paddingBottom: 80 }}>
 
       {tab === "home" && (
         <div>
           <div style={{ background: `linear-gradient(160deg, ${COLORS.primary}, ${COLORS.teal})`, padding: "48px 20px 28px", color: "#fff" }}>
-            <p style={{ margin: 0, fontSize: 15, opacity: 0.8 }}>2026년 4월 22일 화요일</p>
+            <p style={{ margin: 0, fontSize: 15, opacity: 0.8 }}>2026년 4월 23일 목요일</p>
             <h1 style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 700, letterSpacing: "-0.5px" }}>한 끼 챙김 🍚</h1>
             <p style={{ margin: "6px 0 0", fontSize: 15, opacity: 0.75 }}>권장 칼로리 <strong>{userInfo.bmr.toLocaleString()}kcal</strong> · 오늘도 잘 드세요!</p>
           </div>
 
           <div style={{ padding: "0 16px", marginTop: -16 }}>
+            {/* 도장 카드 */}
             <div style={{ background: COLORS.card, borderRadius: 18, padding: "18px 16px", boxShadow: "0 4px 16px rgba(46,109,164,0.11)", marginBottom: 12 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
                 <div>
@@ -202,7 +256,7 @@ useEffect(() => {
               <div style={{ display: "flex", gap: 8, justifyContent: "space-between" }}>
                 {days.map((d, i) => (
                   <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
-                    <div style={{ width: 36, height: 36, borderRadius: "50%", background: stamps[i] ? `linear-gradient(135deg, ${COLORS.primary}, ${COLORS.teal})` : COLORS.lightBlue, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: stamps[i] ? "0 2px 8px rgba(46,109,164,0.3)" : "none", transition: "all 0.3s" }}>
+                    <div style={{ width: 36, height: 36, borderRadius: "50%", background: stamps[i] ? `linear-gradient(135deg, ${COLORS.primary}, ${COLORS.teal})` : COLORS.lightBlue, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: stamps[i] ? "0 2px 8px rgba(46,109,164,0.3)" : "none" }}>
                       <span style={{ fontSize: stamps[i] ? 18 : 12, color: stamps[i] ? "#fff" : COLORS.border }}>{stamps[i] ? "🍚" : "·"}</span>
                     </div>
                     <span style={{ fontSize: 11, color: i === 2 ? COLORS.primary : COLORS.sub, fontWeight: i === 2 ? 700 : 400 }}>{d}</span>
@@ -211,6 +265,7 @@ useEffect(() => {
               </div>
             </div>
 
+            {/* 식단 + 기록 */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
               <div onClick={() => setTab("diet")} style={{ background: COLORS.card, borderRadius: 16, padding: "16px 14px", boxShadow: "0 2px 12px rgba(46,109,164,0.10)", cursor: "pointer" }}>
                 <p style={{ margin: "0 0 8px", fontSize: 13, color: COLORS.sub, fontWeight: 600 }}>오늘의 식단</p>
@@ -237,19 +292,23 @@ useEffect(() => {
               </div>
             </div>
 
+            {/* 건강 뉴스 - 클릭하면 카드뉴스로 */}
             <div style={{ background: COLORS.card, borderRadius: 16, padding: "16px", boxShadow: "0 2px 12px rgba(46,109,164,0.08)", marginBottom: 12 }}>
-              <p style={{ margin: "0 0 12px", fontSize: 14, color: COLORS.sub, fontWeight: 600 }}>건강 뉴스 📰</p>
+              <p style={{ margin: "0 0 12px", fontSize: 14, color: COLORS.sub, fontWeight: 600 }}>건강 뉴스 📰 <span style={{ fontSize: 11, color: COLORS.teal }}>탭하면 자세히 볼 수 있어요</span></p>
               {newsItems.map((n, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, paddingBottom: i < newsItems.length - 1 ? 12 : 0, borderBottom: i < newsItems.length - 1 ? `1px solid ${COLORS.border}` : "none", marginBottom: i < newsItems.length - 1 ? 12 : 0 }}>
-                  <span style={{ fontSize: 26 }}>{n.emoji}</span>
+                <div key={i} onClick={() => setSelectedNews(n)}
+                  style={{ display: "flex", alignItems: "center", gap: 12, paddingBottom: i < newsItems.length - 1 ? 12 : 0, borderBottom: i < newsItems.length - 1 ? `1px solid ${COLORS.border}` : "none", marginBottom: i < newsItems.length - 1 ? 12 : 0, cursor: "pointer" }}>
+                  <div style={{ width: 48, height: 48, borderRadius: 14, background: n.color || COLORS.lightBlue, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, flexShrink: 0 }}>{n.emoji}</div>
                   <div style={{ flex: 1 }}>
                     <p style={{ margin: 0, fontSize: 15, color: COLORS.text, fontWeight: 500, lineHeight: 1.4 }}>{n.title}</p>
                     <span style={{ fontSize: 12, color: COLORS.primary, background: COLORS.lightBlue, padding: "2px 8px", borderRadius: 20, marginTop: 4, display: "inline-block" }}>{n.tag}</span>
                   </div>
+                  <span style={{ color: COLORS.sub, fontSize: 16 }}>›</span>
                 </div>
               ))}
             </div>
 
+            {/* 건강 수치 */}
             <div onClick={() => setTab("health")} style={{ background: `linear-gradient(135deg, ${COLORS.lightBlue}, #E8F5F2)`, borderRadius: 16, padding: "16px", cursor: "pointer", boxShadow: "0 2px 12px rgba(46,109,164,0.07)", marginBottom: 12 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
@@ -323,17 +382,17 @@ useEffect(() => {
               <p style={{ margin: "0 0 4px", fontSize: 13, color: COLORS.sub, fontWeight: 600 }}>공유할 내용 미리보기</p>
               <p style={{ margin: 0, fontSize: 15, color: COLORS.text }}>📋 이번 주 식단표 + 🛒 장바구니 링크</p>
             </div>
-<button onClick={() => {
-  const text = `🍚 한 끼 챙김 - 이번 주 식단\n\n${weeklyMenus[selectedDay]?.meals?.map((m, i) => `${mealLabels[i]}: ${m.name}`).join('\n')}\n\n🛒 장바구니 보기: https://nimonohankki-app.vercel.app`;
-  if (navigator.share) {
-    navigator.share({ title: '한 끼 챙김 식단', text });
-  } else {
-    navigator.clipboard.writeText(text);
-    alert('클립보드에 복사됐어요!');
-  }
-}} style={{ width: "100%", padding: "16px 0", borderRadius: 14, border: "none", background: "#FEE500", color: "#3A1D1D", fontSize: 16, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>
-  💬 자녀에게 카톡으로 공유하기
-</button>
+            <button onClick={() => {
+              const text = `🍚 한 끼 챙김 - 이번 주 식단\n\n${weeklyMenus[selectedDay]?.meals?.map((m, i) => `${mealLabels[i]}: ${m.name}`).join('\n')}\n\n🛒 장바구니 보기: https://nimonohankki-app.vercel.app`;
+              if (navigator.share) {
+                navigator.share({ title: '한 끼 챙김 식단', text });
+              } else {
+                navigator.clipboard.writeText(text);
+                alert('클립보드에 복사됐어요!');
+              }
+            }} style={{ width: "100%", padding: "16px 0", borderRadius: 14, border: "none", background: "#FEE500", color: "#3A1D1D", fontSize: 16, fontWeight: 700, fontFamily: FONT, cursor: "pointer" }}>
+              💬 자녀에게 카톡으로 공유하기
+            </button>
           </div>
         </div>
       )}
